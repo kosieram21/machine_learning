@@ -3,128 +3,111 @@ import random
 
 
 def vadd(a, b):
-    n = len(a)
-    return [a[i] + b[i] for i in range(n)]
+    return [a[i] + b[i] for i in range(len(a))]
 
 
 def vsubt(a, b):
-    n = len(a)
-    return [a[i] - b[i] for i in range(n)]
+    return [a[i] - b[i] for i in range(len(a))]
 
 
 def madd(A, B):
-    n = len(A)
-    return [vadd(A[i], B[i]) for i in range(n)]
+    return [vadd(A[i], B[i]) for i in range(len(A))]
 
 
 def msubt(A, B):
-    n = len(A)
-    return [vsubt(A[i], B[i]) for i in range(n)]
+    return [vsubt(A[i], B[i]) for i in range(len(A))]
 
 
 def sadd(a, scalar):
-    n = len(a)
-    return [a[i] + scalar for i in range(n)]
+    return [a[i] + scalar for i in range(len(a))]
 
 
 def smadd(A, scalar):
-    n = len(A)
-    return [sadd(A[i], scalar) for i in range(n)]
+    return [sadd(A[i], scalar) for i in range(len(A))]
 
 
 def ssubt(a, scalar):
-    n = len(a)
-    return [a[i] - scalar for i in range(n)]
+    return [a[i] - scalar for i in range(len(a))]
 
 
 def smsubt(A, scalar):
-    n = len(A)
-    return [ssubt(A[i], scalar) for i in range(n)]
+    return [ssubt(A[i], scalar) for i in range(len(A))]
 
 
 def smult(a, scalar):
-    n = len(a)
-    return [a[i] * scalar for i in range(n)]
+    return [a[i] * scalar for i in range(len(a))]
 
 
 def smmult(A, scalar):
-    n = len(A)
-    return [smult(A[i], scalar) for i in range(n)]
+    return [smult(A[i], scalar) for i in range(len(A))]
 
 
 def sdiv(a, scalar):
-    n = len(a)
-    reciprocal = 1 / scalar
-    return smult(a, reciprocal)
+    return smult(a, 1 / scalar)
 
 
 def smdiv(A, scalar):
-    n = len(A)
-    reciprocal = 1 / scalar
-    return [sdiv(A[i], reciprocal) for i in range(n)]
+    return [sdiv(A[i], scalar) for i in range(len(A))]
 
 
 def dot(a, b):
-    n = len(a)
-    return sum([a[i] * b[i] for i in range(n)])
+    return sum([a[i] * b[i] for i in range(len(a))])
 
 
 def mdot(A, b):
-    n = len(A)
-    return [dot(A[i], b) for i in range(n)]
+    return [dot(A[i], b) for i in range(len(A))]
 
 
 def outer(a, b):
-    A = [[0.0 for i in range(len(a))] for j in range(len(b))]
-    for i in range(len(a)):
-        for j in range(len(b)):
-            A[i][j] = A[i][j] + a[i] * b[j]
-    return A
+    return [[a[i] * b[j] for i in range(len(a))] for j in range(len(b))]
 
 
-def norm(vector):
-    n = len(vector)
-    return math.sqrt(sum([pow(vector[i], 2) for i in range(n)]))
+def transpose(A):
+    return list(map(list, zip(*A)))
 
 
-def mean(data):
-    data_size = len(data)
-    datum_size = len(data[0])
-    M = [0.0 for i in range(datum_size)]
-
-    for datum in data:
-        M = vadd(M, datum)
-    M = sdiv(M, data_size)
-
-    return M
+def norm(a):
+    return math.sqrt(sum([pow(a[i], 2) for i in range(len(a))]))
 
 
-def center(data, P):
-    n = len(data)
-    return [vsubt(data[i], P) for i in range(n)]
+def normalize(A):
+    return [sdiv(a, norm(a)) for a in A]
 
 
-def covariance(data):
-    data_size = len(data)
-    datum_size = len(data[0])
-    C = [[0.0 for i in range(datum_size)] for j in range(datum_size)]
-
-    for datum in data:
-        C = madd(C, outer(datum, datum))
-    C = smdiv(C, data_size - 1)
-
-    return C
+def distance(a, b):
+    return norm(vsubt(a, b))
 
 
-def power_iteration(matrix):
-    bk = [random.random() for i in range(len(matrix))]
+def mean(A):
+    return sdiv([sum([a[i] for a in A]) for i in range(len(A[0]))], len(A))
+
+
+def center(A, b):
+    return [vsubt(a, b) for a in A]
+
+
+def covariance(A):
+    outer_products = [outer(a, a) for a in A]
+    return smdiv([[sum([o[i][j] for o in outer_products]) for i in range(len(A[0]))] for j in range(len(A[0]))], len(A))
+
+
+def rayleigh_quotient(A, b):
+    return dot(b, mdot(A, b)) / dot(b, b)
+
+
+def hotelling_deflation(A, vector, value):
+    return msubt(A, smmult(outer(vector, vector), value))
+
+
+def power_iteration(A):
+    bk = [random.random() for i in range(len(A))]
     bk = sdiv(bk, norm(bk))
-    rk = rayleigh_quotient(matrix, bk)
+    rk = rayleigh_quotient(A, bk)
 
     while True:
-        bk1 = mdot(matrix, bk)
+        bk1 = mdot(A, bk)
         bk1 = sdiv(bk1, norm(bk1))
-        rk1 = rayleigh_quotient(matrix, bk1)
+        rk1 = rayleigh_quotient(A, bk1)
 
         if math.isclose(rk1, rk):
             return bk1, rk1
@@ -133,21 +116,11 @@ def power_iteration(matrix):
         rk = rk1
 
 
-def rayleigh_quotient(matrix, vector):
-    R = dot(vector, mdot(matrix, vector)) / dot(vector, vector)
-    return R
-
-
-def hotelling_deflation(matrix, vector, value):
-    B = msubt(matrix, smmult(outer(vector, vector), value))
-    return B
-
-
-def spectral_decomposition(matrix, n):
+def spectral_decomposition(A, n):
     vectors = [[0.0 for i in range(n)] for j in range(n)]
     values = [0.0 for i in range(n)]
 
-    B = matrix
+    B = A
     for i in range(n):
         vectors[i], values[i] = power_iteration(B)
         B = hotelling_deflation(B, vectors[i], values[i])
@@ -155,25 +128,10 @@ def spectral_decomposition(matrix, n):
     return vectors, values
 
 
-def pca(data, num_components):
-    data_mean = mean(data)
-    data = center(data, data_mean)
-    covariance_matrix = covariance(data)
-    eigen_vectors, eigen_values = spectral_decomposition(covariance_matrix, num_components)
-    return eigen_vectors
-
-
-training_data = [
-    [7, 4, 3],
-    [4, 1, 8],
-    [6, 3, 5],
-    [8, 6, 1],
-    [8, 5, 7],
-    [7, 2, 9],
-    [5, 3, 3],
-    [9, 5, 8],
-    [7, 4, 5],
-    [8, 2, 2]
-]
-components = pca(training_data, 3)
-print(components)
+def pca(A, n):
+    no_transpose = len(A) >= len(A[0])  # TODO: we seem to be loosing a little bit of accuracy when we do the transpose trick
+    B = normalize(center(A, mean(A))) if no_transpose else transpose(normalize(center(A, mean(A))))
+    C = covariance(B)
+    eigen_vectors, eigen_values = spectral_decomposition(C, n)
+    components = eigen_vectors if no_transpose else [mdot(B, eigen_vector) for eigen_vector in eigen_vectors]
+    return components
