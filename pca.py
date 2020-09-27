@@ -70,8 +70,12 @@ def norm(a):
     return math.sqrt(sum([pow(a[i], 2) for i in range(len(a))]))
 
 
-def normalize(A):
-    return [sdiv(a, norm(a)) for a in A]
+def normalize(a):
+    return sdiv(a, norm(a))
+
+
+def standardize(A):
+    return [normalize(a) for a in center(A, mean(A))]
 
 
 def distance(a, b):
@@ -100,13 +104,11 @@ def hotelling_deflation(A, vector, value):
 
 
 def power_iteration(A):
-    bk = [random.random() for i in range(len(A))]
-    bk = sdiv(bk, norm(bk))
+    bk = normalize([random.random() for i in range(len(A))])
     rk = rayleigh_quotient(A, bk)
 
     while True:
-        bk1 = mdot(A, bk)
-        bk1 = sdiv(bk1, norm(bk1))
+        bk1 = normalize(mdot(A, bk))
         rk1 = rayleigh_quotient(A, bk1)
 
         if math.isclose(rk1, rk):
@@ -129,9 +131,10 @@ def spectral_decomposition(A, n):
 
 
 def pca(A, n):
-    no_transpose = len(A) >= len(A[0])  # TODO: we seem to be loosing a little bit of accuracy when we do the transpose trick
-    B = normalize(center(A, mean(A))) if no_transpose else transpose(normalize(center(A, mean(A))))
+    no_transpose = len(A) >= len(A[0])
+    B = standardize(A) if no_transpose else transpose(standardize(A))
     C = covariance(B)
     eigen_vectors, eigen_values = spectral_decomposition(C, n)
-    components = eigen_vectors if no_transpose else [mdot(B, eigen_vector) for eigen_vector in eigen_vectors]
+
+    components = eigen_vectors if no_transpose else standardize([mdot(B, eigen_vector) for eigen_vector in eigen_vectors])
     return components
